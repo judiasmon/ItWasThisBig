@@ -1,0 +1,11 @@
+## Interface: 16001
+## Title: It Was This Big
+## Notes: Track your catches, lengths, weights, and personal records.
+## Author: It Was This Big
+## Version: 1.0.0
+## SavedVariables: ItWasThisBigDB
+
+IWTB_Fish.lua
+IWTB_Settings.lua
+IWTB_UI.lua
+ItWasThisBig.lua
