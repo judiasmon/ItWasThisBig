@@ -19,8 +19,12 @@ color indicates the catch's length relative to its species average:
 poor below average, common around average, then uncommon, rare, epic, and
 legendary at increasing standard-deviation thresholds. Rare, epic, and
 legendary catches each have an independent sound checkbox, as does the
-personal-record sound. The Settings tab uses checkboxes for each sound option
-and for the minimap icon.
+personal-record sound. The Settings tab also has checkboxes for the minimap
+icon and temporarily muting music, ambience, and dialog sound from the fishing
+cast until a fish is looted. Sound effects remain enabled so the fishing splash
+can play. The original muted settings are restored when loot is received, if
+the cast is interrupted or fails, when the option is turned off, or when the
+player logs out; addon catch alerts use the master sound channel.
 The Settings tab also lets you turn the Deviate Fish minimap button on or off;
 the button can be dragged around the minimap and clicked to open the addon.
 The minimap button angle is saved between sessions.

@@ -7,6 +7,13 @@ local rarityRanks = { poor = 1, common = 2, uncommon = 3, rare = 4, epic = 5, le
 local unknownFishIcon = IWTB.UnknownFishIcon
 local logLimit = 500
 local minimapButton
+local fishingChannelActive = false
+local savedSoundSettings
+local mutedSoundCVars = {
+    "Sound_EnableMusic",
+    "Sound_EnableAmbience",
+    "Sound_EnableDialog"
+}
 
 local function NormalizeName(name)
     if not name then
@@ -77,6 +84,81 @@ local function GetRarity(length, fish)
         return "epic"
     end
     return "legendary"
+end
+
+local function GetFishingSpellName()
+    if GetSpellInfo then
+        local fishingSpellName = GetSpellInfo(7620)
+        if fishingSpellName then
+            return NormalizeName(fishingSpellName)
+        end
+    end
+    return "fishing"
+end
+
+local function RestoreGameSounds()
+    if not savedSoundSettings then
+        return
+    end
+    for _, cvar in ipairs(mutedSoundCVars) do
+        local value = savedSoundSettings[cvar]
+        if value ~= nil then
+            SetCVar(cvar, value)
+        end
+    end
+    savedSoundSettings = nil
+end
+
+local function MuteGameSounds()
+    if savedSoundSettings or not GetCVar or not SetCVar then
+        return
+    end
+    savedSoundSettings = {}
+    for _, cvar in ipairs(mutedSoundCVars) do
+        local value = GetCVar(cvar)
+        if value ~= nil then
+            savedSoundSettings[cvar] = value
+            SetCVar(cvar, "0")
+        end
+    end
+end
+
+local function UpdateFishingSoundMute()
+    if fishingChannelActive and ItWasThisBigDB.settings.muteGameSoundsWhileFishing then
+        MuteGameSounds()
+    else
+        RestoreGameSounds()
+    end
+end
+IWTB.UpdateFishingSoundMute = UpdateFishingSoundMute
+
+local function IsFishingSpell(...)
+    local fishingSpellName = GetFishingSpellName()
+    for i = 1, select("#", ...) do
+        local spell = select(i, ...)
+        if spell == 7620 or (type(spell) == "string" and NormalizeName(spell) == fishingSpellName) then
+            return true
+        end
+    end
+    return false
+end
+
+local function OnFishingSpellcastStart(unit, ...)
+    if unit ~= "player" then
+        return
+    end
+    if IsFishingSpell(...) then
+        fishingChannelActive = true
+        UpdateFishingSoundMute()
+    end
+end
+
+local function OnFishingSpellcastEnd(unit, ...)
+    if unit ~= "player" or not IsFishingSpell(...) then
+        return
+    end
+    fishingChannelActive = false
+    UpdateFishingSoundMute()
 end
 
 function IWTB.FormatWeight(weight)
@@ -178,7 +260,7 @@ end
 
 local function PlayCatchSound(file)
     if PlaySoundFile then
-        PlaySoundFile(file)
+        PlaySoundFile(file, "Master")
     elseif PlaySound then
         PlaySound("RaidWarning")
     end
@@ -316,6 +398,9 @@ function IWTB.EnsureDatabase()
     if ItWasThisBigDB.settings.minimapAngle == nil then
         ItWasThisBigDB.settings.minimapAngle = 220
     end
+    if ItWasThisBigDB.settings.muteGameSoundsWhileFishing == nil then
+        ItWasThisBigDB.settings.muteGameSoundsWhileFishing = false
+    end
     if not ItWasThisBigDB.speciesStats then
         ItWasThisBigDB.speciesStats = {}
     end
@@ -327,15 +412,17 @@ local function OnLootMessage(message, source)
     if not itemName then
         return
     end
-    local fish = GetFish(itemName)
-    if not fish then
-        return
-    end
     local playerName = UnitName("player")
     if source and source ~= "" and source ~= playerName then
         return
     end
     if not source and not string.find(message, "You receive loot", 1, true) then
+        return
+    end
+    fishingChannelActive = false
+    UpdateFishingSoundMute()
+    local fish = GetFish(itemName)
+    if not fish then
         return
     end
     local quantity = 1
@@ -351,6 +438,11 @@ end
 local eventFrame = CreateFrame("Frame")
 eventFrame:RegisterEvent("ADDON_LOADED")
 eventFrame:RegisterEvent("CHAT_MSG_LOOT")
+eventFrame:RegisterEvent("UNIT_SPELLCAST_START")
+eventFrame:RegisterEvent("UNIT_SPELLCAST_CHANNEL_START")
+eventFrame:RegisterEvent("UNIT_SPELLCAST_INTERRUPTED")
+eventFrame:RegisterEvent("UNIT_SPELLCAST_FAILED")
+eventFrame:RegisterEvent("PLAYER_LOGOUT")
 eventFrame:SetScript("OnEvent", function(self, eventName, ...)
     local loadedAddon = ...
     if eventName == "ADDON_LOADED" and loadedAddon == addonName then
@@ -361,6 +453,16 @@ eventFrame:SetScript("OnEvent", function(self, eventName, ...)
         local _, source = ...
         IWTB.EnsureDatabase()
         OnLootMessage(message, source)
+    elseif eventName == "UNIT_SPELLCAST_CHANNEL_START" then
+        OnFishingSpellcastStart(...)
+    elseif eventName == "UNIT_SPELLCAST_START" then
+        OnFishingSpellcastStart(...)
+    elseif eventName == "UNIT_SPELLCAST_INTERRUPTED"
+        or eventName == "UNIT_SPELLCAST_FAILED" then
+        OnFishingSpellcastEnd(...)
+    elseif eventName == "PLAYER_LOGOUT" then
+        fishingChannelActive = false
+        RestoreGameSounds()
     end
 end)
 

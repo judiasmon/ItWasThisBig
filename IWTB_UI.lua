@@ -249,6 +249,8 @@ local function BuildWindow()
     IWTB.CreateSettingCheckbox(mainFrame, "Legendary catch sound alert", "legendarySound", -164)
     IWTB.CreateSettingCheckbox(mainFrame, "Personal record sound alert", "recordSound", -194)
     IWTB.CreateSettingCheckbox(mainFrame, "Minimap icon", "minimapButton", -224, IWTB.UpdateMinimapButton)
+    IWTB.CreateSettingCheckbox(mainFrame, "Mute music, ambience and dialog while fishing",
+        "muteGameSoundsWhileFishing", -254, IWTB.UpdateFishingSoundMute)
     mainFrame.emptyLabel = CreateText(mainFrame, "GameFontHighlight",
         "", "CENTER", mainFrame, "CENTER", 0, -15)
     mainFrame.detailFrame = CreateFrame("Frame", nil, mainFrame)
