@@ -5,10 +5,46 @@ An interface 16001 fishing addon for WoW Forever. Copy this folder into
 screen, and open it with `/iwtb` or `/bigfish`.
 
 The addon watches your loot messages for catalogued fish and records an
-estimated length and weight for each one. Estimates use the species' average
-and standard deviation in `IWTB_Fish.lua`; random values are clamped at zero.
-Freshwater fish use lower weight estimates than comparable saltwater fish,
-and the estimates generally rise with fish level.
+estimated length and weight for each one. Lengths are in centimeters and
+weights are in kilograms. Since Azeroth's fish are fictional, their averages
+are based on representative real-world analogues listed below. The standard
+deviations in `IWTB_Fish.lua` are gameplay variation estimates, not measured
+biological statistics; random values are clamped at zero. Freshwater fish are
+generally lighter than saltwater fish, and estimates tend to rise with fish
+level.
+
+| Catalog fish | Real-world size analogue | Reference |
+| --- | --- | --- |
+| Brilliant Smallfish | Fathead minnow | [FishBase](https://www.fishbase.se/summary/Pimephales-promelas.html) |
+| Slitherskin Mackerel | Atlantic mackerel | [NOAA Fisheries](https://www.fisheries.noaa.gov/species/atlantic-mackerel) |
+| Longjaw Mud Snapper | Mudminnow | [FishBase](https://www.fishbase.se/summary/Umbra-limi.html) |
+| Rainbow Fin Albacore | Albacore | [FishBase](https://www.fishbase.se/summary/Thunnus-alalunga.html) |
+| Bristle Whisker Catfish | Channel catfish | [FishBase](https://www.fishbase.se/summary/Ictalurus-punctatus.html) |
+| Rockscale Cod | Atlantic cod | [NOAA Fisheries](https://www.fisheries.noaa.gov/species/atlantic-cod) |
+| Mithril Head Trout | Rainbow trout | [FishBase](https://www.fishbase.se/summary/Oncorhynchus-mykiss.html) |
+| Redgill | Redbreast sunfish | [FishBase](https://www.fishbase.se/summary/Lepomis-auritus.html) |
+| Spotted Yellowtail | Yellowtail snapper | [NOAA Fisheries](https://www.fisheries.noaa.gov/species/yellowtail-snapper); [Florida Museum](https://www.floridamuseum.ufl.edu/discover-fish/species-profiles/yellowtail-snapper/) |
+| Sunscale Salmon | Atlantic salmon | [NOAA Fisheries](https://www.fisheries.noaa.gov/species/atlantic-salmon) |
+| Nightfin Snapper | Black crappie | [FishBase](https://www.fishbase.se/summary/Pomoxis-nigromaculatus.html) |
+| Greater Sagefish | Larger adult gizzard shad | [FishBase](https://www.fishbase.se/summary/Dorosoma-cepedianum.html) |
+| Sagefish | Gizzard shad | [FishBase](https://www.fishbase.se/summary/Dorosoma-cepedianum.html) |
+| Oily Blackmouth | Atlantic menhaden | [FishBase](https://www.fishbase.se/summary/Brevoortia-tyrannus.html) |
+| Firefin Snapper | Red snapper | [NOAA Fisheries](https://www.fisheries.noaa.gov/species/red-snapper) |
+| Stonescale Eel | Conger eel | [FishBase](https://www.fishbase.se/summary/Conger-conger.html) |
+| Deviate Fish | Common carp (size and habitat proxy) | [FishBase](https://www.fishbase.se/summary/Cyprinus-carpio.html) |
+| Glossy Mightfish | Greater amberjack | [NOAA Fisheries](https://www.fisheries.noaa.gov/species/greater-amberjack) |
+| Whitescale Salmon | Chinook salmon | [NOAA Fisheries](https://www.fisheries.noaa.gov/species/chinook-salmon) |
+| Winter Squid | Longfin inshore squid (mantle length) | [FishBase](https://www.fishbase.se/summary/Doryteuthis-pealeii.html) |
+| Summer Bass | Black sea bass | [NOAA Fisheries](https://www.fisheries.noaa.gov/species/black-sea-bass) |
+| Darters | Rainbow darter | [FishBase](https://www.fishbase.se/summary/Etheostoma-caeruleum.html) |
+| Blackbelly Mudfish | Bowfin | [FishBase](https://www.fishbase.se/summary/Amia-calva.html) |
+| Large Mightfish | Large adult greater amberjack | [NOAA Fisheries](https://www.fisheries.noaa.gov/species/greater-amberjack) |
+| Darkclaw Lobster | American lobster | [NOAA Fisheries](https://www.fisheries.noaa.gov/species/american-lobster) |
+
+These are deliberately rounded working estimates, not exact averages for the
+fictional fish. Several names have no clear real species match: those entries
+use a proxy based on the name, habitat, or likely body type. The game applies
+the same Fishing-skill bonus on top of these baseline weights.
 
 The menu has Settings, Freshwater, Saltwater, and Log tabs. Fish species you
 have not discovered appear as question-mark icons; caught species show their
