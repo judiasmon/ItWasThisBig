@@ -1,0 +1,25 @@
+name: Upload to CurseForge
+
+on:
+  release:
+    types: [published] # Triggers when you create a GitHub release
+
+jobs:
+  upload:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # (Optional step: Insert your build or compilation tool here if needed)
+
+      - name: CurseForge Upload
+        uses: [itsmeow/curseforge-upload](https://github.com/marketplace/actions/upload-to-curseforge)@v3
+        with:
+          token: ${{ secrets.CURSEFORGE_TOKEN }}
+          project_id: 1727191 # Replace with your numerical CurseForge Project ID
+          game_endpoint: wow # Subdomain for your game (e.g., minecraft, wow, terraria)
+          file_path: build/libs/my-mod-1.0.jar # The relative path to your file
+          release_type: release # Options: alpha, beta, release
+          changelog_type: markdown
+          changelog: ${{ github.event.release.body }} # Reuses your GitHub release text
