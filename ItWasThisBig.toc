@@ -6,6 +6,9 @@
 ## SavedVariables: ItWasThisBigDB
 
 IWTB_Fish.lua
+IWTB_Stats.lua
 IWTB_Settings.lua
+IWTB_Audio.lua
+IWTB_Minimap.lua
 IWTB_UI.lua
 ItWasThisBig.lua
