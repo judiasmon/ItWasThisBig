@@ -79,3 +79,8 @@ to support additional fish names or custom-server content.
 The addon code is divided into `ItWasThisBig.lua` for catch tracking and saved
 data, `IWTB_UI.lua` for the window and fish views, and `IWTB_Settings.lua` for
 settings controls. The `.toc` file lists them in required load order.
+
+## License
+
+This project is distributed under the BSD 2-Clause License. See [LICENSE](LICENSE)
+for the complete terms.
