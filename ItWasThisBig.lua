@@ -96,10 +96,47 @@ local function GetRarity(length, fish)
 end
 
 function IWTB.FormatWeight(weight)
+    if ItWasThisBigDB and ItWasThisBigDB.settings and ItWasThisBigDB.settings.imperialUnits then
+        local pounds = weight * 2.2046226218
+        if pounds < 1 then
+            return string.format("%.1f oz", pounds * 16)
+        end
+        return string.format("%.1f lb", pounds)
+    end
     if weight < 1 then
         return string.format("%.0f g", weight * 1000)
     end
     return string.format("%.2f kg", weight)
+end
+
+function IWTB.FormatLength(length)
+    if ItWasThisBigDB and ItWasThisBigDB.settings and ItWasThisBigDB.settings.imperialUnits then
+        return string.format("%.1f in", length / 2.54)
+    end
+    return string.format("%.1f cm", length)
+end
+
+function IWTB.FormatCatchTime(catchTime)
+    if not (ItWasThisBigDB and ItWasThisBigDB.settings and ItWasThisBigDB.settings.twelveHourTime) then
+        return catchTime
+    end
+
+    local datePart, hourText, minute = string.match(catchTime or "",
+        "^(%d%d%d%d%-%d%d%-%d%d)%s+(%d%d):(%d%d)$")
+    if not datePart then
+        return catchTime
+    end
+
+    local hour = tonumber(hourText)
+    if hour > 23 then
+        return catchTime
+    end
+    local period = hour < 12 and "AM" or "PM"
+    hour = hour % 12
+    if hour == 0 then
+        hour = 12
+    end
+    return string.format("%s %d:%s %s", datePart, hour, minute, period)
 end
 
 local function GetItemName(message)
@@ -234,6 +271,12 @@ function IWTB.EnsureDatabase()
     end
     if ItWasThisBigDB.settings.muteGameSoundsWhileFishing == nil then
         ItWasThisBigDB.settings.muteGameSoundsWhileFishing = false
+    end
+    if ItWasThisBigDB.settings.imperialUnits == nil then
+        ItWasThisBigDB.settings.imperialUnits = false
+    end
+    if ItWasThisBigDB.settings.twelveHourTime == nil then
+        ItWasThisBigDB.settings.twelveHourTime = false
     end
     if not ItWasThisBigDB.speciesStats then
         ItWasThisBigDB.speciesStats = {}

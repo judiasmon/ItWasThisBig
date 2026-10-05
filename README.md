@@ -5,8 +5,10 @@ An interface 16001 fishing addon for WoW Forever. Copy this folder into
 screen, and open it with `/iwtb` or `/bigfish`.
 
 The addon watches your loot messages for catalogued fish and records an
-estimated length and weight for each one. Lengths are in centimeters and
-weights are in kilograms. Since Azeroth's fish are fictional, their averages
+estimated length and weight for each one. Measurements are shown in metric by
+default; the Settings tab can switch the display to inches, ounces, and pounds.
+The same tab switches displayed catch times between 24-hour and 12-hour format.
+Since Azeroth's fish are fictional, their averages
 are based on representative real-world analogues listed below. The standard
 deviations in `IWTB_Fish.lua` are gameplay variation estimates, not measured
 biological statistics; random values are clamped at zero. Freshwater fish are

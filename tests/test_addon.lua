@@ -103,6 +103,30 @@ local function TestOtherPlayersLootIsIgnored()
     assert(#ItWasThisBigDB.log == 0, "another player's loot was recorded")
 end
 
+local function TestUnitAndTimeFormatSettings()
+    ItWasThisBigDB = nil
+    IWTB.EnsureDatabase()
+
+    assert(IWTB.FormatLength(2.54) == "2.5 cm", "metric length format changed")
+    assert(IWTB.FormatWeight(0.02) == "20 g", "metric small-weight format changed")
+    assert(IWTB.FormatCatchTime("2026-01-01 00:05") == "2026-01-01 00:05",
+        "24-hour time is not the default")
+
+    ItWasThisBigDB.settings.imperialUnits = true
+    ItWasThisBigDB.settings.twelveHourTime = true
+    assert(IWTB.FormatLength(2.54) == "1.0 in", "imperial length conversion failed")
+    assert(IWTB.FormatWeight(0.02) == "0.7 oz", "imperial ounce conversion failed")
+    assert(IWTB.FormatWeight(1) == "2.2 lb", "imperial pound conversion failed")
+    assert(IWTB.FormatCatchTime("2026-01-01 00:05") == "2026-01-01 12:05 AM",
+        "midnight was not formatted correctly")
+    assert(IWTB.FormatCatchTime("2026-01-01 12:00") == "2026-01-01 12:00 PM",
+        "noon was not formatted correctly")
+    assert(IWTB.FormatCatchTime("2026-01-01 13:25") == "2026-01-01 1:25 PM",
+        "afternoon time was not formatted correctly")
+    assert(IWTB.FormatCatchTime("older-format") == "older-format",
+        "unrecognized legacy time was not preserved")
+end
+
 local function TestLifetimeAggregatesOutliveCappedLog()
     ItWasThisBigDB = nil
     IWTB.EnsureDatabase()
@@ -169,6 +193,7 @@ end
 
 TestLootCatchUpdatesZoneAndSpeciesStats()
 TestOtherPlayersLootIsIgnored()
+TestUnitAndTimeFormatSettings()
 TestLifetimeAggregatesOutliveCappedLog()
 TestClearingLogKeepsLifetimeStatisticsAndRecords()
 TestLegacySavedDataRebuildsAvailableAggregates()
