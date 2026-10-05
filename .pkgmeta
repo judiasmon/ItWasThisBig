@@ -1,0 +1,8 @@
+package-as: ItWasThisBig
+
+ignore:
+  - .git
+  - .pkgmeta
+  - .vscode
+  - tests
+  - "*.zip"
