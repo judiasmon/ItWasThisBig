@@ -2,7 +2,7 @@
 ## Title: It Was This Big
 ## Notes: Track your catches, lengths, weights, and personal records.
 ## Author: It Was This Big
-## Version: 1.0.0
+## Version: 1.0.1
 ## SavedVariables: ItWasThisBigDB
 
 IWTB_Fish.lua

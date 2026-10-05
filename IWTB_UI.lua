@@ -57,8 +57,9 @@ local function GetDisplayRows()
     if currentView == "log" then
         for _, catch in ipairs(ItWasThisBigDB.log) do
             table.insert(rows, {
-                text = string.format("%s  %.1f cm  %s  %s  %s%s",
-                    catch.species, catch.length, IWTB.FormatWeight(catch.weight), catch.time,
+                text = string.format("%s  %s  %s  %s  %s%s",
+                    catch.species, IWTB.FormatLength(catch.length), IWTB.FormatWeight(catch.weight),
+                    IWTB.FormatCatchTime(catch.time),
                     catch.zone or "Zone unknown",
                     catch.personalRecord and "  [RECORD]" or ""),
                 rarity = catch.rarity
@@ -92,7 +93,8 @@ local function FormatCatchSummary(catch)
     if not catch then
         return "No catch recorded"
     end
-    return string.format("%.1f cm  %s  (%s)", catch.length, IWTB.FormatWeight(catch.weight), catch.time)
+    return string.format("%s  %s  (%s)", IWTB.FormatLength(catch.length),
+        IWTB.FormatWeight(catch.weight), IWTB.FormatCatchTime(catch.time))
 end
 
 local function UpdateFishDetail()
@@ -116,8 +118,8 @@ local function UpdateFishDetail()
     local multiplier = stats.best and stats.best.weightMultiplier or 1
     mainFrame.detailSkill:SetText(string.format("Fishing skill at best catch: %d  (+%d%% estimated weight)",
         skill, math.floor((multiplier - 1) * 100 + 0.5)))
-    mainFrame.detailEstimate:SetText(string.format("Typical size: %.1f cm, %s",
-        fish.length, IWTB.FormatWeight(fish.weight)))
+    mainFrame.detailEstimate:SetText(string.format("Typical size: %s, %s",
+        IWTB.FormatLength(fish.length), IWTB.FormatWeight(fish.weight)))
     mainFrame.detailLore:SetText(fish.lore or "No field notes are available for this fish yet.")
     mainFrame.detailFrame:Show()
 end
@@ -338,6 +340,10 @@ local function BuildWindow()
     IWTB.CreateSettingCheckbox(mainFrame, "Minimap icon", "minimapButton", -224, IWTB.UpdateMinimapButton)
     IWTB.CreateSettingCheckbox(mainFrame, "Mute music, ambience and dialog while fishing",
         "muteGameSoundsWhileFishing", -254, IWTB.UpdateFishingSoundMute)
+    IWTB.CreateSettingCheckbox(mainFrame, "Use imperial units (inches, pounds)", "imperialUnits", -284,
+        IWTB.RefreshRows)
+    IWTB.CreateSettingCheckbox(mainFrame, "Use 12-hour time", "twelveHourTime", -314,
+        IWTB.RefreshRows)
     mainFrame.emptyLabel = CreateText(mainFrame, "GameFontHighlight",
         "", "CENTER", mainFrame, "CENTER", 0, -15)
     mainFrame.statsPanel = CreateFrame("Frame", nil, mainFrame)
