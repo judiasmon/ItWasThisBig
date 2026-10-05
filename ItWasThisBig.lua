@@ -34,13 +34,22 @@ for _, fish in ipairs(IWTB_Fish) do
 end
 
 local function GetFishingSkill()
-    if not GetNumSkillLines or not GetSkillLineInfo then
-        return 0, 300
+    if GetProfessions and GetProfessionInfo then
+        local _, _, _, fishingProfession = GetProfessions()
+        if fishingProfession then
+            local _, _, rank, maxRank = GetProfessionInfo(fishingProfession)
+            if rank then
+                return rank, maxRank or 300
+            end
+        end
     end
-    for i = 1, GetNumSkillLines() do
-        local name, isHeader, _, rank, _, modifier, maxRank = GetSkillLineInfo(i)
-        if not isHeader and name and string.lower(name) == "fishing" then
-            return (rank or 0) + (modifier or 0), maxRank or 300
+
+    if GetNumSkillLines and GetSkillLineInfo then
+        for i = 1, GetNumSkillLines() do
+            local name, isHeader, _, rank, _, modifier, maxRank = GetSkillLineInfo(i)
+            if not isHeader and name and string.lower(name) == "fishing" then
+                return (rank or 0) + (modifier or 0), maxRank or 300
+            end
         end
     end
     return 0, 300
@@ -173,15 +182,59 @@ local function GetItemName(message)
     if linkedName then
         return linkedName
     end
-    return nil
+    local _, _, itemName = string.find(message or "", "%[(.-)%]")
+    return itemName
+end
+
+local function GetItemLink(message)
+    return string.match(message or "", "|Hitem:.-|h%[.-%]|h")
+end
+
+local function IsPlayerLootMessage(message, source)
+    local playerName = UnitName("player")
+    if source and (source == playerName or source == YOU or source == "You") then
+        return true
+    end
+
+    local selfLootPrefix = LOOT_ITEM_SELF and string.match(LOOT_ITEM_SELF, "^(.-)%%s")
+    if selfLootPrefix and string.sub(message, 1, string.len(selfLootPrefix)) == selfLootPrefix then
+        return true
+    end
+    return string.find(message, "You receive loot:", 1, true) == 1
 end
 
 function IWTB.GetFishIcon(fish)
+    local savedIcon = ItWasThisBigDB.fishIcons and ItWasThisBigDB.fishIcons[fish.name]
+    if savedIcon then
+        return savedIcon
+    end
+    local record = ItWasThisBigDB.records[fish.name]
+    local itemLink = fish.itemLink or (record and record.itemLink)
+    local itemID = itemLink and tonumber(string.match(itemLink, "|Hitem:(%d+)"))
+    itemID = itemID or fish.itemID
+    local texture
+
+    if itemID and GetItemIcon then
+        texture = GetItemIcon(itemID)
+    end
+    if not texture and itemID and C_Item and C_Item.GetItemIconByID then
+        texture = C_Item.GetItemIconByID(itemID)
+    end
     if GetItemInfo then
-        local _, _, _, _, _, _, _, _, _, texture = GetItemInfo(fish.aliases[1] or fish.name)
-        if texture then
-            return texture
+        if not texture then
+            local _, _, _, _, _, _, _, _, _, itemTexture =
+                GetItemInfo(itemLink or itemID or fish.aliases[1] or fish.name)
+            texture = itemTexture
         end
+        if not texture and itemID then
+            local _, _, _, _, _, _, _, _, _, itemTexture = GetItemInfo(itemID)
+            texture = itemTexture
+        end
+    end
+    if texture then
+        ItWasThisBigDB.fishIcons = ItWasThisBigDB.fishIcons or {}
+        ItWasThisBigDB.fishIcons[fish.name] = texture
+        return texture
     end
     return fish.icon or unknownFishIcon
 end
@@ -297,7 +350,7 @@ local function UpdateSpeciesStats(fish, catch)
     end
 end
 
-local function RecordCatch(fish, itemName)
+local function RecordCatch(fish, itemName, itemLink)
     local length = NormalSample(fish.length, fish.lengthSD)
     local fishingSkill, maxFishingSkill = GetFishingSkill()
     local weightMultiplier = GetWeightMultiplier(fishingSkill, maxFishingSkill)
@@ -308,6 +361,7 @@ local function RecordCatch(fish, itemName)
     local catch = {
         species = fish.name,
         item = itemName,
+        itemLink = itemLink,
         length = length,
         weight = weight,
         rarity = rarity,
@@ -404,6 +458,9 @@ function IWTB.EnsureDatabase()
     if not ItWasThisBigDB.speciesStats then
         ItWasThisBigDB.speciesStats = {}
     end
+    if not ItWasThisBigDB.fishIcons then
+        ItWasThisBigDB.fishIcons = {}
+    end
     InitializeSpeciesStats()
 end
 
@@ -412,11 +469,7 @@ local function OnLootMessage(message, source)
     if not itemName then
         return
     end
-    local playerName = UnitName("player")
-    if source and source ~= "" and source ~= playerName then
-        return
-    end
-    if not source and not string.find(message, "You receive loot", 1, true) then
+    if not IsPlayerLootMessage(message, source) then
         return
     end
     fishingChannelActive = false
@@ -425,19 +478,23 @@ local function OnLootMessage(message, source)
     if not fish then
         return
     end
+    local itemLink = GetItemLink(message)
+    fish.itemLink = itemLink
+    IWTB.GetFishIcon(fish)
     local quantity = 1
     local _, _, amount = string.find(message, "|h%s*[xX](%d+)")
     if amount then
         quantity = math.min(tonumber(amount), 99)
     end
     for _ = 1, quantity do
-        RecordCatch(fish, itemName)
+        RecordCatch(fish, itemName, itemLink)
     end
 end
 
 local eventFrame = CreateFrame("Frame")
 eventFrame:RegisterEvent("ADDON_LOADED")
 eventFrame:RegisterEvent("CHAT_MSG_LOOT")
+eventFrame:RegisterEvent("GET_ITEM_INFO_RECEIVED")
 eventFrame:RegisterEvent("UNIT_SPELLCAST_START")
 eventFrame:RegisterEvent("UNIT_SPELLCAST_CHANNEL_START")
 eventFrame:RegisterEvent("UNIT_SPELLCAST_INTERRUPTED")
@@ -453,6 +510,10 @@ eventFrame:SetScript("OnEvent", function(self, eventName, ...)
         local _, source = ...
         IWTB.EnsureDatabase()
         OnLootMessage(message, source)
+    elseif eventName == "GET_ITEM_INFO_RECEIVED" then
+        if IWTB.MainFrame and IWTB.MainFrame:IsShown() then
+            IWTB.RefreshRows()
+        end
     elseif eventName == "UNIT_SPELLCAST_CHANNEL_START" then
         OnFishingSpellcastStart(...)
     elseif eventName == "UNIT_SPELLCAST_START" then

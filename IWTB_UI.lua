@@ -263,22 +263,19 @@ local function BuildWindow()
     end)
     mainFrame.detailBackButton:SetPoint("TOPLEFT", mainFrame.detailFrame, "TOPLEFT", 0, 0)
 
-    local detailIconFrame = CreateFrame("Frame", nil, mainFrame.detailFrame, "BackdropTemplate")
-    detailIconFrame:SetWidth(66)
-    detailIconFrame:SetHeight(66)
-    detailIconFrame:SetPoint("TOPLEFT", mainFrame.detailFrame, "TOPLEFT", 4, -34)
-    detailIconFrame:SetBackdrop({
-        bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
+    mainFrame.detailIconFrame = CreateFrame("Frame", nil, mainFrame.detailFrame, "BackdropTemplate")
+    mainFrame.detailIconFrame:SetWidth(60)
+    mainFrame.detailIconFrame:SetHeight(60)
+    mainFrame.detailIconFrame:SetPoint("TOPLEFT", mainFrame.detailFrame, "TOPLEFT", 6, -37)
+    mainFrame.detailIconFrame:SetBackdrop({
         edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
-        tile = true, tileSize = 16, edgeSize = 12,
+        tile = true, tileSize = 16, edgeSize = 8,
         insets = { left = 2, right = 2, top = 2, bottom = 2 }
     })
-    detailIconFrame:SetBackdropColor(0.02, 0.02, 0.02, 1)
-    mainFrame.detailIconFrame = detailIconFrame
-    mainFrame.detailIcon = detailIconFrame:CreateTexture(nil, "ARTWORK")
-    mainFrame.detailIcon:SetWidth(48)
-    mainFrame.detailIcon:SetHeight(48)
-    mainFrame.detailIcon:SetPoint("CENTER", detailIconFrame, "CENTER", 0, 0)
+    mainFrame.detailIcon = mainFrame.detailIconFrame:CreateTexture(nil, "ARTWORK")
+    mainFrame.detailIcon:SetWidth(56)
+    mainFrame.detailIcon:SetHeight(56)
+    mainFrame.detailIcon:SetPoint("CENTER", mainFrame.detailIconFrame, "CENTER", 0, 0)
     mainFrame.detailName = CreateText(mainFrame.detailFrame, "GameFontNormalLarge", "",
         "TOPLEFT", mainFrame.detailFrame, "TOPLEFT", 82, -43)
     mainFrame.detailType = CreateText(mainFrame.detailFrame, "GameFontHighlight",
