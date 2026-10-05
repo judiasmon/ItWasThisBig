@@ -46,7 +46,15 @@ fictional fish. Several names have no clear real species match: those entries
 use a proxy based on the name, habitat, or likely body type. The game applies
 the same Fishing-skill bonus on top of these baseline weights.
 
-The menu has Settings, Freshwater, Saltwater, and Log tabs. Fish species you
+The menu has Settings, Freshwater, Saltwater, Log, and Stats tabs. New catches
+store the current zone in the log and update persistent zone totals. The Stats
+tab shows the most-caught species, heaviest and lightest catches, and zone
+with the most catches. The catch log is a rolling history capped at 500 catches;
+species and zone totals are separate lifetime aggregates and do not decrease as
+old log entries roll off. On upgrade, aggregates are rebuilt from the saved log
+and personal records, so catches already missing from that history cannot be
+reconstructed. Older log entries without zone data are not attributed to a zone.
+Fish species you
 have not discovered appear as question-mark icons; caught species show their
 best-record rarity as the icon border. Click a discovered fish icon for its catch count,
 heaviest and lightest catches, estimated weight bonus from your Fishing skill,
@@ -76,9 +84,15 @@ This is an estimate-based tracking addon, not a source of actual fish sizes.
 The bundled catalog covers the classic fish set; add species to `IWTB_Fish.lua`
 to support additional fish names or custom-server content.
 
-The addon code is divided into `ItWasThisBig.lua` for catch tracking and saved
-data, `IWTB_UI.lua` for the window and fish views, and `IWTB_Settings.lua` for
-settings controls. The `.toc` file lists them in required load order.
+The addon is split by responsibility: `ItWasThisBig.lua` parses loot and
+records catches; `IWTB_Stats.lua` owns lifetime species/zone aggregates and
+their legacy-data initialization; `IWTB_Audio.lua` handles cast muting and
+catch alerts; `IWTB_Minimap.lua` manages the minimap button; `IWTB_UI.lua`
+renders the window and views; and `IWTB_Settings.lua` builds settings
+controls. The `.toc` file lists them in required load order.
+
+The standalone behavior tests mock the WoW APIs and can be run from the addon
+directory with `lua tests\test_addon.lua` (Lua 5.1 or compatible).
 
 ## License
 

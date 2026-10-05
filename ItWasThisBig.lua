@@ -2,18 +2,8 @@ IWTB = IWTB or {}
 local IWTB = IWTB
 local addonName = "ItWasThisBig"
 local fishByName = {}
-local fishBySpecies = {}
-local rarityRanks = { poor = 1, common = 2, uncommon = 3, rare = 4, epic = 5, legendary = 6 }
 local unknownFishIcon = IWTB.UnknownFishIcon
 local logLimit = 500
-local minimapButton
-local fishingChannelActive = false
-local savedSoundSettings
-local mutedSoundCVars = {
-    "Sound_EnableMusic",
-    "Sound_EnableAmbience",
-    "Sound_EnableDialog"
-}
 
 local function NormalizeName(name)
     if not name then
@@ -26,7 +16,6 @@ local function NormalizeName(name)
 end
 
 for _, fish in ipairs(IWTB_Fish) do
-    fishBySpecies[fish.name] = fish
     fishByName[NormalizeName(fish.name)] = fish
     for _, alias in ipairs(fish.aliases) do
         fishByName[NormalizeName(alias)] = fish
@@ -53,6 +42,17 @@ local function GetFishingSkill()
         end
     end
     return 0, 300
+end
+
+local function GetCurrentZone()
+    local zone = GetRealZoneText and GetRealZoneText()
+    if not zone or zone == "" then
+        zone = GetZoneText and GetZoneText()
+    end
+    if not zone or zone == "" then
+        return "Unknown zone"
+    end
+    return zone
 end
 
 local function GetWeightMultiplier(skill, maxSkill)
@@ -93,81 +93,6 @@ local function GetRarity(length, fish)
         return "epic"
     end
     return "legendary"
-end
-
-local function GetFishingSpellName()
-    if GetSpellInfo then
-        local fishingSpellName = GetSpellInfo(7620)
-        if fishingSpellName then
-            return NormalizeName(fishingSpellName)
-        end
-    end
-    return "fishing"
-end
-
-local function RestoreGameSounds()
-    if not savedSoundSettings then
-        return
-    end
-    for _, cvar in ipairs(mutedSoundCVars) do
-        local value = savedSoundSettings[cvar]
-        if value ~= nil then
-            SetCVar(cvar, value)
-        end
-    end
-    savedSoundSettings = nil
-end
-
-local function MuteGameSounds()
-    if savedSoundSettings or not GetCVar or not SetCVar then
-        return
-    end
-    savedSoundSettings = {}
-    for _, cvar in ipairs(mutedSoundCVars) do
-        local value = GetCVar(cvar)
-        if value ~= nil then
-            savedSoundSettings[cvar] = value
-            SetCVar(cvar, "0")
-        end
-    end
-end
-
-local function UpdateFishingSoundMute()
-    if fishingChannelActive and ItWasThisBigDB.settings.muteGameSoundsWhileFishing then
-        MuteGameSounds()
-    else
-        RestoreGameSounds()
-    end
-end
-IWTB.UpdateFishingSoundMute = UpdateFishingSoundMute
-
-local function IsFishingSpell(...)
-    local fishingSpellName = GetFishingSpellName()
-    for i = 1, select("#", ...) do
-        local spell = select(i, ...)
-        if spell == 7620 or (type(spell) == "string" and NormalizeName(spell) == fishingSpellName) then
-            return true
-        end
-    end
-    return false
-end
-
-local function OnFishingSpellcastStart(unit, ...)
-    if unit ~= "player" then
-        return
-    end
-    if IsFishingSpell(...) then
-        fishingChannelActive = true
-        UpdateFishingSoundMute()
-    end
-end
-
-local function OnFishingSpellcastEnd(unit, ...)
-    if unit ~= "player" or not IsFishingSpell(...) then
-        return
-    end
-    fishingChannelActive = false
-    UpdateFishingSoundMute()
 end
 
 function IWTB.FormatWeight(weight)
@@ -239,117 +164,6 @@ function IWTB.GetFishIcon(fish)
     return fish.icon or unknownFishIcon
 end
 
-local function PositionMinimapButton()
-    if not minimapButton or not Minimap then
-        return
-    end
-    local angle = math.rad(ItWasThisBigDB.settings.minimapAngle or 220)
-    local radius = (Minimap:GetWidth() / 2) + 4
-    minimapButton:ClearAllPoints()
-    minimapButton:SetPoint("CENTER", Minimap, "CENTER",
-        math.cos(angle) * radius, math.sin(angle) * radius)
-end
-
-function IWTB.UpdateMinimapButton()
-    if not minimapButton then
-        minimapButton = CreateFrame("Button", "ItWasThisBigMinimapButton", Minimap)
-        minimapButton:SetWidth(32)
-        minimapButton:SetHeight(32)
-        minimapButton:SetFrameStrata("MEDIUM")
-        minimapButton:SetFrameLevel(Minimap:GetFrameLevel() + 5)
-        minimapButton:RegisterForClicks("LeftButtonUp", "RightButtonUp")
-        minimapButton:RegisterForDrag("LeftButton")
-
-        local icon = minimapButton:CreateTexture(nil, "BACKGROUND")
-        icon:SetTexture("Interface\\Icons\\INV_Misc_MonsterHead_01")
-        icon:SetWidth(20)
-        icon:SetHeight(20)
-        icon:SetPoint("CENTER", minimapButton, "CENTER", 0, 0)
-        minimapButton.icon = icon
-
-        local border = minimapButton:CreateTexture(nil, "OVERLAY")
-        border:SetTexture("Interface\\Minimap\\MiniMap-TrackingBorder")
-        border:SetWidth(54)
-        border:SetHeight(54)
-        border:SetPoint("TOPLEFT", minimapButton, "TOPLEFT", 0, 0)
-
-        minimapButton:SetScript("OnClick", function()
-            if IWTB.OpenWindow then
-                IWTB.OpenWindow()
-            end
-        end)
-        minimapButton:SetScript("OnEnter", function()
-            GameTooltip:SetOwner(minimapButton, "ANCHOR_LEFT")
-            GameTooltip:SetText("It Was This Big!")
-            GameTooltip:AddLine("Click to open your fishing records.", 1, 1, 1)
-            GameTooltip:Show()
-        end)
-        minimapButton:SetScript("OnLeave", function()
-            GameTooltip:Hide()
-        end)
-        minimapButton:SetScript("OnDragStart", function(self)
-            self:SetScript("OnUpdate", function()
-                local x, y = GetCursorPosition()
-                local scale = UIParent:GetEffectiveScale()
-                x = x / scale - Minimap:GetLeft() - (Minimap:GetWidth() / 2)
-                y = y / scale - Minimap:GetBottom() - (Minimap:GetHeight() / 2)
-                local angle = math.deg(math.atan2(y, x))
-                ItWasThisBigDB.settings.minimapAngle = angle
-                PositionMinimapButton()
-            end)
-        end)
-        minimapButton:SetScript("OnDragStop", function(self)
-            self:SetScript("OnUpdate", nil)
-        end)
-    end
-
-    if ItWasThisBigDB.settings.minimapButton then
-        PositionMinimapButton()
-        minimapButton:Show()
-    else
-        minimapButton:Hide()
-    end
-end
-
-local function PlayCatchSound(file)
-    if PlaySoundFile then
-        PlaySoundFile(file, "Master")
-    elseif PlaySound then
-        PlaySound("RaidWarning")
-    end
-end
-
-local function AlertCatch(catch)
-    if catch.personalRecord and ItWasThisBigDB.settings.recordSound then
-        PlayCatchSound("Sound\\Interface\\LevelUp.ogg")
-    end
-    if catch.rarity == "rare" and ItWasThisBigDB.settings.rareSound then
-        PlayCatchSound("Sound\\Interface\\RaidWarning.ogg")
-    elseif catch.rarity == "epic" and ItWasThisBigDB.settings.epicSound then
-        PlayCatchSound("Sound\\Interface\\LevelUp.ogg")
-    elseif catch.rarity == "legendary" and ItWasThisBigDB.settings.legendarySound then
-        PlayCatchSound("Sound\\Interface\\iQuestComplete.ogg")
-    end
-end
-
-local function UpdateSpeciesStats(fish, catch)
-    local stats = ItWasThisBigDB.speciesStats[fish.name]
-    if not stats then
-        stats = { count = 0, bestRarity = "poor" }
-        ItWasThisBigDB.speciesStats[fish.name] = stats
-    end
-    stats.count = stats.count + 1
-    if not stats.best or catch.weight > stats.best.weight then
-        stats.best = catch
-    end
-    if not stats.worst or catch.weight < stats.worst.weight then
-        stats.worst = catch
-    end
-    if (rarityRanks[catch.rarity] or 0) > (rarityRanks[stats.bestRarity] or 0) then
-        stats.bestRarity = catch.rarity
-    end
-end
-
 local function RecordCatch(fish, itemName, itemLink)
     local length = NormalSample(fish.length, fish.lengthSD)
     local fishingSkill, maxFishingSkill = GetFishingSkill()
@@ -367,6 +181,7 @@ local function RecordCatch(fish, itemName, itemLink)
         rarity = rarity,
         fishingSkill = fishingSkill,
         weightMultiplier = weightMultiplier,
+        zone = GetCurrentZone(),
         time = date("%Y-%m-%d %H:%M"),
         personalRecord = isRecord
     }
@@ -378,46 +193,11 @@ local function RecordCatch(fish, itemName, itemLink)
     if isRecord then
         ItWasThisBigDB.records[fish.name] = catch
     end
-    UpdateSpeciesStats(fish, catch)
-    AlertCatch(catch)
+    IWTB.UpdateCatchStatistics(fish, catch)
+    IWTB.AlertCatch(catch)
     if IWTB.MainFrame and IWTB.MainFrame:IsShown() then
         IWTB.RefreshRows()
     end
-end
-
-local function InitializeSpeciesStats()
-    if ItWasThisBigDB.speciesStatsInitialized then
-        return
-    end
-    ItWasThisBigDB.speciesStats = {}
-    for i = table.getn(ItWasThisBigDB.log), 1, -1 do
-        local catch = ItWasThisBigDB.log[i]
-        local fish = fishBySpecies[catch.species]
-        if fish then
-            UpdateSpeciesStats(fish, catch)
-        end
-    end
-    for species, record in pairs(ItWasThisBigDB.records) do
-        local stats = ItWasThisBigDB.speciesStats[species]
-        if not stats then
-            stats = {
-                count = 1,
-                best = record,
-                worst = record,
-                bestRarity = record.rarity or "poor"
-            }
-            ItWasThisBigDB.speciesStats[species] = stats
-        elseif not stats.best or record.weight > stats.best.weight then
-            stats.best = record
-        end
-        if not stats.worst or record.weight < stats.worst.weight then
-            stats.worst = record
-        end
-        if (rarityRanks[record.rarity] or 0) > (rarityRanks[stats.bestRarity] or 0) then
-            stats.bestRarity = record.rarity
-        end
-    end
-    ItWasThisBigDB.speciesStatsInitialized = true
 end
 
 function IWTB.EnsureDatabase()
@@ -461,7 +241,10 @@ function IWTB.EnsureDatabase()
     if not ItWasThisBigDB.fishIcons then
         ItWasThisBigDB.fishIcons = {}
     end
-    InitializeSpeciesStats()
+    if not ItWasThisBigDB.zoneStats then
+        ItWasThisBigDB.zoneStats = {}
+    end
+    IWTB.InitializeStatistics()
 end
 
 local function OnLootMessage(message, source)
@@ -472,8 +255,7 @@ local function OnLootMessage(message, source)
     if not IsPlayerLootMessage(message, source) then
         return
     end
-    fishingChannelActive = false
-    UpdateFishingSoundMute()
+    IWTB.OnFishingLootReceived()
     local fish = GetFish(itemName)
     if not fish then
         return
@@ -495,11 +277,6 @@ local eventFrame = CreateFrame("Frame")
 eventFrame:RegisterEvent("ADDON_LOADED")
 eventFrame:RegisterEvent("CHAT_MSG_LOOT")
 eventFrame:RegisterEvent("GET_ITEM_INFO_RECEIVED")
-eventFrame:RegisterEvent("UNIT_SPELLCAST_START")
-eventFrame:RegisterEvent("UNIT_SPELLCAST_CHANNEL_START")
-eventFrame:RegisterEvent("UNIT_SPELLCAST_INTERRUPTED")
-eventFrame:RegisterEvent("UNIT_SPELLCAST_FAILED")
-eventFrame:RegisterEvent("PLAYER_LOGOUT")
 eventFrame:SetScript("OnEvent", function(self, eventName, ...)
     local loadedAddon = ...
     if eventName == "ADDON_LOADED" and loadedAddon == addonName then
@@ -514,16 +291,6 @@ eventFrame:SetScript("OnEvent", function(self, eventName, ...)
         if IWTB.MainFrame and IWTB.MainFrame:IsShown() then
             IWTB.RefreshRows()
         end
-    elseif eventName == "UNIT_SPELLCAST_CHANNEL_START" then
-        OnFishingSpellcastStart(...)
-    elseif eventName == "UNIT_SPELLCAST_START" then
-        OnFishingSpellcastStart(...)
-    elseif eventName == "UNIT_SPELLCAST_INTERRUPTED"
-        or eventName == "UNIT_SPELLCAST_FAILED" then
-        OnFishingSpellcastEnd(...)
-    elseif eventName == "PLAYER_LOGOUT" then
-        fishingChannelActive = false
-        RestoreGameSounds()
     end
 end)
 

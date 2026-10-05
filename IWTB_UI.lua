@@ -44,14 +44,35 @@ local function GetDisplayRows()
     if currentView == "log" then
         for _, catch in ipairs(ItWasThisBigDB.log) do
             table.insert(rows, {
-                text = string.format("%s  %.1f cm  %s  %s%s",
+                text = string.format("%s  %.1f cm  %s  %s  %s%s",
                     catch.species, catch.length, IWTB.FormatWeight(catch.weight), catch.time,
+                    catch.zone or "Zone unknown",
                     catch.personalRecord and "  [RECORD]" or ""),
                 rarity = catch.rarity
             })
         end
     end
     return rows
+end
+
+local function FormatStatisticCatch(catch)
+    if not catch then
+        return "No catches yet"
+    end
+    return string.format("%s  |  %s  |  %s",
+        catch.species, IWTB.FormatWeight(catch.weight), catch.zone or "Zone unknown")
+end
+
+local function UpdateStatistics()
+    local stats = IWTB.GetStatistics()
+    mainFrame.statsMostCaught:SetText(stats.mostCaught
+        and string.format("Most caught: %s (%d)", stats.mostCaught.species, stats.mostCaught.count)
+        or "Most caught: No catches yet")
+    mainFrame.statsHeaviest:SetText("Heaviest fish: " .. FormatStatisticCatch(stats.heaviest))
+    mainFrame.statsLightest:SetText("Lightest fish: " .. FormatStatisticCatch(stats.lightest))
+    mainFrame.statsTopZone:SetText(stats.topZone
+        and string.format("Zone with most catches: %s (%d)", stats.topZone.name, stats.topZone.count)
+        or "Zone with most catches: No zone data yet")
 end
 
 local function FormatCatchSummary(catch)
@@ -88,18 +109,7 @@ local function UpdateFishDetail()
     mainFrame.detailFrame:Show()
 end
 
-local function RefreshRows()
-    local rows = GetDisplayRows()
-    local fishPage = currentView == "fresh" or currentView == "salt"
-    local showFishGrid = fishPage and not selectedFish
-    local habitatFish = showFishGrid and GetFishForHabitat() or {}
-    local maxOffset
-    if showFishGrid then
-        maxOffset = math.max(0, math.ceil((table.getn(habitatFish) - table.getn(iconFrames)) / 6) * 6)
-    else
-        maxOffset = math.max(0, table.getn(rows) - table.getn(rowFrames))
-    end
-    scrollOffset = math.min(scrollOffset, maxOffset)
+local function UpdateLogRows(rows)
     for i, rowFrame in ipairs(rowFrames) do
         local row = currentView == "log" and rows[i + scrollOffset] or nil
         if row then
@@ -111,6 +121,9 @@ local function RefreshRows()
             rowFrame:Hide()
         end
     end
+end
+
+local function UpdateFishGrid(habitatFish, showFishGrid)
     for i, iconFrame in ipairs(iconFrames) do
         local fish = showFishGrid and habitatFish[i + scrollOffset] or nil
         if fish then
@@ -126,11 +139,17 @@ local function RefreshRows()
             iconFrame:Hide()
         end
     end
+end
+
+local function UpdateSelectedView(fishPage)
     if fishPage and selectedFish then
         UpdateFishDetail()
     elseif mainFrame.detailFrame then
         mainFrame.detailFrame:Hide()
     end
+end
+
+local function UpdateEmptyState(rows)
     if mainFrame.emptyLabel then
         local isEmpty = currentView == "log" and table.getn(rows) == 0
         mainFrame.emptyLabel:SetText("No catches yet. Your fish will appear here.")
@@ -140,9 +159,19 @@ local function RefreshRows()
             mainFrame.emptyLabel:Hide()
         end
     end
+end
+
+local function UpdateAuxiliaryViews()
     local showSettings = currentView == "settings"
+    local showStatistics = currentView == "stats"
     if showSettings then
         IWTB.UpdateSettingCheckboxes()
+    end
+    if showStatistics then
+        UpdateStatistics()
+        mainFrame.statsPanel:Show()
+    else
+        mainFrame.statsPanel:Hide()
     end
     for _, checkbox in ipairs(IWTB.SettingChecks) do
         if showSettings then
@@ -153,6 +182,9 @@ local function RefreshRows()
             checkbox.label:Hide()
         end
     end
+end
+
+local function UpdateCountLabel()
     if mainFrame.countLabel then
         if currentView == "log" then
             mainFrame.countLabel:SetText(string.format("%d catches", table.getn(ItWasThisBigDB.log)))
@@ -172,10 +204,15 @@ local function RefreshRows()
             else
                 mainFrame.countLabel:SetText(string.format("%d / %d found", discovered, total))
             end
+        elseif currentView == "stats" then
+            mainFrame.countLabel:SetText("Statistics")
         else
             mainFrame.countLabel:SetText("Preferences")
         end
     end
+end
+
+local function UpdateTabSelection()
     for _, tab in ipairs(tabs) do
         if tab.view == currentView then
             tab:SetAlpha(1)
@@ -183,6 +220,28 @@ local function RefreshRows()
             tab:SetAlpha(0.7)
         end
     end
+end
+
+local function RefreshRows()
+    local rows = GetDisplayRows()
+    local fishPage = currentView == "fresh" or currentView == "salt"
+    local showFishGrid = fishPage and not selectedFish
+    local habitatFish = showFishGrid and GetFishForHabitat() or {}
+    local maxOffset
+    if showFishGrid then
+        maxOffset = math.max(0, math.ceil((table.getn(habitatFish) - table.getn(iconFrames)) / 6) * 6)
+    else
+        maxOffset = math.max(0, table.getn(rows) - table.getn(rowFrames))
+    end
+    scrollOffset = math.min(scrollOffset, maxOffset)
+
+    UpdateLogRows(rows)
+    UpdateFishGrid(habitatFish, showFishGrid)
+    UpdateSelectedView(fishPage)
+    UpdateEmptyState(rows)
+    UpdateAuxiliaryViews()
+    UpdateCountLabel()
+    UpdateTabSelection()
 end
 
 local function SetView(view)
@@ -226,7 +285,8 @@ local function BuildWindow()
         { view = "settings", label = "Settings", width = 90 },
         { view = "fresh", label = "Freshwater", width = 105 },
         { view = "salt", label = "Saltwater", width = 100 },
-        { view = "log", label = "Log", width = 75 }
+        { view = "log", label = "Log", width = 75 },
+        { view = "stats", label = "Stats", width = 70 }
     }
     local previousTab
     for _, spec in ipairs(tabSpecs) do
@@ -253,6 +313,21 @@ local function BuildWindow()
         "muteGameSoundsWhileFishing", -254, IWTB.UpdateFishingSoundMute)
     mainFrame.emptyLabel = CreateText(mainFrame, "GameFontHighlight",
         "", "CENTER", mainFrame, "CENTER", 0, -15)
+    mainFrame.statsPanel = CreateFrame("Frame", nil, mainFrame)
+    mainFrame.statsPanel:SetPoint("TOPLEFT", mainFrame, "TOPLEFT", 30, -96)
+    mainFrame.statsPanel:SetWidth(500)
+    mainFrame.statsPanel:SetHeight(250)
+    mainFrame.statsTitle = CreateText(mainFrame.statsPanel, "GameFontNormalLarge",
+        "Fishing Statistics", "TOPLEFT", mainFrame.statsPanel, "TOPLEFT", 0, 0)
+    mainFrame.statsMostCaught = CreateText(mainFrame.statsPanel, "GameFontHighlight",
+        "", "TOPLEFT", mainFrame.statsTitle, "BOTTOMLEFT", 0, -25)
+    mainFrame.statsHeaviest = CreateText(mainFrame.statsPanel, "GameFontHighlight",
+        "", "TOPLEFT", mainFrame.statsMostCaught, "BOTTOMLEFT", 0, -22)
+    mainFrame.statsLightest = CreateText(mainFrame.statsPanel, "GameFontHighlight",
+        "", "TOPLEFT", mainFrame.statsHeaviest, "BOTTOMLEFT", 0, -22)
+    mainFrame.statsTopZone = CreateText(mainFrame.statsPanel, "GameFontHighlight",
+        "", "TOPLEFT", mainFrame.statsLightest, "BOTTOMLEFT", 0, -22)
+    mainFrame.statsPanel:Hide()
     mainFrame.detailFrame = CreateFrame("Frame", nil, mainFrame)
     mainFrame.detailFrame:SetPoint("TOPLEFT", mainFrame, "TOPLEFT", 20, -82)
     mainFrame.detailFrame:SetWidth(520)
