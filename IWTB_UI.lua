@@ -39,6 +39,19 @@ local function CreateButton(parent, text, width, height, onClick)
     return button
 end
 
+StaticPopupDialogs["IWTB_CLEAR_LOG"] = {
+    text = "Clear the recent catch log? Lifetime statistics and personal records will be kept.",
+    button1 = YES,
+    button2 = NO,
+    OnAccept = function()
+        IWTB.ClearCatchLog()
+    end,
+    timeout = 0,
+    whileDead = true,
+    hideOnEscape = true,
+    preferredIndex = 3
+}
+
 local function GetDisplayRows()
     local rows = {}
     if currentView == "log" then
@@ -164,6 +177,7 @@ end
 local function UpdateAuxiliaryViews()
     local showSettings = currentView == "settings"
     local showStatistics = currentView == "stats"
+    local showLog = currentView == "log"
     if showSettings then
         IWTB.UpdateSettingCheckboxes()
     end
@@ -172,6 +186,12 @@ local function UpdateAuxiliaryViews()
         mainFrame.statsPanel:Show()
     else
         mainFrame.statsPanel:Hide()
+    end
+    if showLog then
+        mainFrame.clearLogButton:Show()
+        mainFrame.clearLogButton:SetEnabled(table.getn(ItWasThisBigDB.log) > 0)
+    else
+        mainFrame.clearLogButton:Hide()
     end
     for _, checkbox in ipairs(IWTB.SettingChecks) do
         if showSettings then
@@ -303,6 +323,13 @@ local function BuildWindow()
         table.insert(tabs, tab)
         previousTab = tab
     end
+
+    mainFrame.clearLogButton = CreateButton(mainFrame, "Clear log", 90, 22, function()
+        if table.getn(ItWasThisBigDB.log) > 0 then
+            StaticPopup_Show("IWTB_CLEAR_LOG")
+        end
+    end)
+    mainFrame.clearLogButton:SetPoint("TOPRIGHT", mainFrame, "TOPRIGHT", -20, -73)
 
     IWTB.CreateSettingCheckbox(mainFrame, "Rare catch sound alert", "rareSound", -104)
     IWTB.CreateSettingCheckbox(mainFrame, "Epic catch sound alert", "epicSound", -134)

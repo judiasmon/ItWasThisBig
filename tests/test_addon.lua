@@ -120,6 +120,25 @@ local function TestLifetimeAggregatesOutliveCappedLog()
         "statistics page summaries are not using lifetime aggregates")
 end
 
+local function TestClearingLogKeepsLifetimeStatisticsAndRecords()
+    ItWasThisBigDB = nil
+    IWTB.EnsureDatabase()
+    FireLoot("You receive loot: [Raw Longjaw Mud Snapper]", YOU)
+    local record = ItWasThisBigDB.records["Longjaw Mud Snapper"]
+    local speciesCount = ItWasThisBigDB.speciesStats["Longjaw Mud Snapper"].count
+    local zoneCount = ItWasThisBigDB.zoneStats["Elwynn Forest"]
+
+    IWTB.ClearCatchLog()
+
+    assert(#ItWasThisBigDB.log == 0, "clear-log action did not empty the recent log")
+    assert(ItWasThisBigDB.records["Longjaw Mud Snapper"] == record,
+        "clear-log action removed the personal record")
+    assert(ItWasThisBigDB.speciesStats["Longjaw Mud Snapper"].count == speciesCount,
+        "clear-log action changed lifetime species totals")
+    assert(ItWasThisBigDB.zoneStats["Elwynn Forest"] == zoneCount,
+        "clear-log action changed lifetime zone totals")
+end
+
 local function TestLegacySavedDataRebuildsAvailableAggregates()
     local loggedCatch = MakeCatch("Longjaw Mud Snapper", 0.02, "Westfall")
     local recordOnlyCatch = MakeCatch("Redgill", 0.15, nil)
@@ -151,5 +170,6 @@ end
 TestLootCatchUpdatesZoneAndSpeciesStats()
 TestOtherPlayersLootIsIgnored()
 TestLifetimeAggregatesOutliveCappedLog()
+TestClearingLogKeepsLifetimeStatisticsAndRecords()
 TestLegacySavedDataRebuildsAvailableAggregates()
 print("All It Was This Big tests passed.")

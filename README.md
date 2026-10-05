@@ -54,6 +54,8 @@ species and zone totals are separate lifetime aggregates and do not decrease as
 old log entries roll off. On upgrade, aggregates are rebuilt from the saved log
 and personal records, so catches already missing from that history cannot be
 reconstructed. Older log entries without zone data are not attributed to a zone.
+The Log tab's Clear log button removes recent entries after confirmation; it
+does not clear lifetime statistics or personal records.
 Fish species you
 have not discovered appear as question-mark icons; caught species show their
 best-record rarity as the icon border. Click a discovered fish icon for its catch count,

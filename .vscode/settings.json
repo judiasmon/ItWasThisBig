@@ -17,6 +17,10 @@
     "Lua.diagnostics.globals": [
         "SlashCmdList",
         "LOOT_ITEM_SELF",
-        "YOU"
+        "YOU",
+        "StaticPopupDialogs",
+        "YES",
+        "NO",
+        "StaticPopup_Show"
     ]
 }

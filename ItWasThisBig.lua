@@ -247,6 +247,13 @@ function IWTB.EnsureDatabase()
     IWTB.InitializeStatistics()
 end
 
+function IWTB.ClearCatchLog()
+    ItWasThisBigDB.log = {}
+    if IWTB.MainFrame and IWTB.MainFrame:IsShown() then
+        IWTB.RefreshRows()
+    end
+end
+
 local function OnLootMessage(message, source)
     local itemName = GetItemName(message)
     if not itemName then
