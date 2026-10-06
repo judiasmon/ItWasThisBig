@@ -3,6 +3,7 @@
 ## Notes: Track your catches, lengths, weights, and personal records.
 ## Author: It Was This Big
 ## Version: 1.0.1
+## X-Curse-Project-ID: 1727191
 ## SavedVariables: ItWasThisBigDB
 
 IWTB_Fish.lua
