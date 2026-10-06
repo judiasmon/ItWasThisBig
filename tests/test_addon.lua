@@ -11,6 +11,43 @@ function CreateFrame()
     function frame:SetScript(scriptName, callback)
         self.scripts[scriptName] = callback
     end
+    function frame:SetWidth()
+    end
+    function frame:SetHeight()
+    end
+    function frame:SetFrameStrata()
+    end
+    function frame:SetFrameLevel()
+    end
+    function frame:RegisterForClicks()
+    end
+    function frame:RegisterForDrag()
+    end
+    function frame:ClearAllPoints()
+    end
+    function frame:SetPoint()
+    end
+    function frame:Show()
+        self.shown = true
+    end
+    function frame:Hide()
+        self.shown = false
+    end
+    function frame:IsShown()
+        return self.shown
+    end
+    function frame:CreateTexture()
+        local texture = {}
+        function texture:SetTexture()
+        end
+        function texture:SetWidth()
+        end
+        function texture:SetHeight()
+        end
+        function texture:SetPoint()
+        end
+        return texture
+    end
     frames[#frames + 1] = frame
     return frame
 end
@@ -47,6 +84,7 @@ IWTB = {}
 dofile("IWTB_Stats.lua")
 dofile("IWTB_Audio.lua")
 dofile("ItWasThisBig.lua")
+dofile("IWTB_Minimap.lua")
 
 local addonFrame
 for _, frame in ipairs(frames) do
@@ -101,6 +139,36 @@ local function TestOtherPlayersLootIsIgnored()
     IWTB.EnsureDatabase()
     FireLoot("Other receives loot: [Raw Longjaw Mud Snapper]", "Other")
     assert(#ItWasThisBigDB.log == 0, "another player's loot was recorded")
+end
+
+local function TestMinimapClickTogglesAddonWindow()
+    Minimap = {
+        GetWidth = function() return 140 end,
+        GetFrameLevel = function() return 1 end
+    }
+    ItWasThisBigDB = nil
+    IWTB.EnsureDatabase()
+    IWTB.UpdateMinimapButton()
+
+    local minimapButton = frames[#frames]
+    local wasOpened = false
+    IWTB.MainFrame = {
+        shown = false,
+        IsShown = function(self) return self.shown end,
+        Show = function(self) self.shown = true end,
+        Hide = function(self) self.shown = false end
+    }
+    IWTB.OpenWindow = function()
+        wasOpened = true
+        IWTB.MainFrame:Show()
+    end
+
+    minimapButton.scripts.OnClick()
+    assert(wasOpened and IWTB.MainFrame:IsShown(),
+        "minimap click did not open the addon window")
+    minimapButton.scripts.OnClick()
+    assert(not IWTB.MainFrame:IsShown(),
+        "minimap click did not close an already-open addon window")
 end
 
 local function TestUnitAndTimeFormatSettings()
@@ -193,6 +261,7 @@ end
 
 TestLootCatchUpdatesZoneAndSpeciesStats()
 TestOtherPlayersLootIsIgnored()
+TestMinimapClickTogglesAddonWindow()
 TestUnitAndTimeFormatSettings()
 TestLifetimeAggregatesOutliveCappedLog()
 TestClearingLogKeepsLifetimeStatisticsAndRecords()

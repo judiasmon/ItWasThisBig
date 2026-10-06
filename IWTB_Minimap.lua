@@ -2,6 +2,14 @@ IWTB = IWTB or {}
 local IWTB = IWTB
 local minimapButton
 
+function IWTB.ToggleWindow()
+    if IWTB.MainFrame and IWTB.MainFrame:IsShown() then
+        IWTB.MainFrame:Hide()
+    elseif IWTB.OpenWindow then
+        IWTB.OpenWindow()
+    end
+end
+
 local function PositionMinimapButton()
     if not minimapButton or not Minimap then
         return
@@ -37,9 +45,7 @@ function IWTB.UpdateMinimapButton()
         border:SetPoint("TOPLEFT", minimapButton, "TOPLEFT", 0, 0)
 
         minimapButton:SetScript("OnClick", function()
-            if IWTB.OpenWindow then
-                IWTB.OpenWindow()
-            end
+            IWTB.ToggleWindow()
         end)
         minimapButton:SetScript("OnEnter", function()
             GameTooltip:SetOwner(minimapButton, "ANCHOR_LEFT")
